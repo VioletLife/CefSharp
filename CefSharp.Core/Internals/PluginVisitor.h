@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -7,7 +7,6 @@
 #include "Stdafx.h"
 #include "include/cef_web_plugin.h"
 
-using namespace CefSharp;
 using namespace System::Threading::Tasks;
 
 namespace CefSharp

@@ -1,10 +1,13 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
-#include "Cef.h"
+
+#include "ManagedCefBrowserAdapter.h"
 #include "Internals/Messaging/Messages.h"
+#include "Internals/CefFrameWrapper.h"
+#include "Internals/CefSharpBrowserWrapper.h"
 
 using namespace CefSharp::Internals::Messaging;
 
@@ -12,7 +15,6 @@ bool ManagedCefBrowserAdapter::IsDisposed::get()
 {
     return _isDisposed;
 }
-
 
 void ManagedCefBrowserAdapter::CreateOffscreenBrowser(IntPtr windowHandle, BrowserSettings^ browserSettings, RequestContext^ requestContext, String^ address)
 {
@@ -36,71 +38,40 @@ void ManagedCefBrowserAdapter::CreateOffscreenBrowser(IntPtr windowHandle, Brows
 
 void ManagedCefBrowserAdapter::OnAfterBrowserCreated(int browserId)
 {
-    //browser wrapper instance has to be set up for the BrowserProcessServiceHost
-    auto browser = _clientAdapter->GetCefBrowser();
-    if (browser != nullptr)
+    if (!_isDisposed)
     {
-        //the js callback factory needs the browser instance to pass it to the js callback implementations for messaging purposes
-        auto cefSharpBrowserWrapper = gcnew CefSharpBrowserWrapper(browser);
-        _browserWrapper = cefSharpBrowserWrapper;
-        _javascriptCallbackFactory->BrowserWrapper = gcnew WeakReference(cefSharpBrowserWrapper);
-    }
-
-    if (CefSharpSettings::WcfEnabled)
-    {
-        _browserProcessServiceHost = gcnew BrowserProcessServiceHost(_javaScriptObjectRepository, Process::GetCurrentProcess()->Id, this);
-        //NOTE: Attempt to solve timing issue where browser is opened and rapidly disposed. In some cases a call to Open throws
-        // an exception about the process already being closed. Two relevant issues are #862 and #804.
-        // Considering adding an IsDisposed check and also may have to revert to a try catch block
-        if (_browserProcessServiceHost->State == CommunicationState::Created)
+        //browser wrapper instance has to be set up for the BrowserProcessServiceHost
+        auto browser = _clientAdapter->GetCefBrowser();
+        if (browser != nullptr)
         {
-            _browserProcessServiceHost->Open();
+            //the js callback factory needs the browser instance to pass it to the js callback implementations for messaging purposes
+            _browserWrapper = gcnew CefSharpBrowserWrapper(browser);
         }
-    }
+
+        _javascriptCallbackFactory->BrowserAdapter = gcnew WeakReference(this);
+
+        if (CefSharpSettings::WcfEnabled)
+        {
+            _browserProcessServiceHost = gcnew BrowserProcessServiceHost(_javaScriptObjectRepository, Process::GetCurrentProcess()->Id, this);
+            //NOTE: Attempt to solve timing issue where browser is opened and rapidly disposed. In some cases a call to Open throws
+            // an exception about the process already being closed. Two relevant issues are #862 and #804.
+            if (_browserProcessServiceHost->State == CommunicationState::Created)
+            {
+                try
+                {
+                    _browserProcessServiceHost->Open();
+                }
+                catch (Exception^)
+                {
+                    //Ignore exception as it's likely cause when the browser is closing
+                }
+            }
+        }
     
-    if (_webBrowserInternal != nullptr)
-    {
-        _webBrowserInternal->OnAfterBrowserCreated();
-    }
-}
-
-void ManagedCefBrowserAdapter::WasResized()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->WasResized();
-    }
-}
-
-void ManagedCefBrowserAdapter::WasHidden(bool hidden)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->WasHidden(hidden);
-    }
-}
-
-void ManagedCefBrowserAdapter::SendFocusEvent(bool isFocused)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->SendFocusEvent(isFocused);
-    }
-}
-
-void ManagedCefBrowserAdapter::SetFocus(bool isFocused)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->SetFocus(isFocused);
+        if (_webBrowserInternal != nullptr)
+        {
+            _webBrowserInternal->OnAfterBrowserCreated();
+        }
     }
 }
 
@@ -254,26 +225,6 @@ void ManagedCefBrowserAdapter::Resize(int width, int height)
     }
 }
 
-void ManagedCefBrowserAdapter::NotifyMoveOrResizeStarted()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->NotifyMoveOrResizeStarted();
-    }
-}
-
-void ManagedCefBrowserAdapter::NotifyScreenInfoChanged()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->NotifyScreenInfoChanged();
-    }
-}
-
 void ManagedCefBrowserAdapter::RegisterJsObject(String^ name, Object^ object, bool lowerCaseJavascriptNames)
 {
     if (!CefSharpSettings::WcfEnabled)
@@ -366,6 +317,11 @@ void ManagedCefBrowserAdapter::OnDragSourceSystemDragEnded()
 IBrowser^ ManagedCefBrowserAdapter::GetBrowser()
 {
     return _browserWrapper;
+}
+
+IBrowser^ ManagedCefBrowserAdapter::GetBrowser(int browserId)
+{
+    return _clientAdapter->GetBrowserWrapper(browserId);
 }
 
 IJavascriptCallbackFactory^ ManagedCefBrowserAdapter::JavascriptCallbackFactory::get()

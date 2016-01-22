@@ -1,12 +1,14 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
+#include "Stdafx.h"
+
 #include "CefWrapper.h"
 
-using namespace System;
+using namespace System::Threading::Tasks;
 
 namespace CefSharp
 {
@@ -39,6 +41,7 @@ namespace CefSharp
         public:
             virtual void StartDownload(String^ url);
             virtual void Print();
+            virtual Task<bool>^ PrintToPdfAsync(String^ path, PdfPrintSettings^ settings);
             virtual void SetZoomLevel(double zoomLevel);
             virtual Task<double>^ GetZoomLevelAsync();
             virtual IntPtr GetWindowHandle();
@@ -65,10 +68,38 @@ namespace CefSharp
 
             virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
 
+            virtual void NotifyMoveOrResizeStarted();
+
+            virtual void NotifyScreenInfoChanged();
+
+            virtual void WasResized();
+
+            virtual void WasHidden(bool hidden);
+
             virtual property int WindowlessFrameRate
             {
                 int get();
                 void set(int val);
+            }
+
+            virtual property bool MouseCursorChangeDisabled
+            {
+                bool get();
+                void set(bool val);
+            }
+
+            virtual property bool WindowRenderingDisabled
+            {
+                bool get();
+            }
+
+            virtual IntPtr GetOpenerWindowHandle();
+
+            virtual void SendCaptureLostEvent();
+
+            virtual property IRequestContext^ RequestContext
+            {
+                IRequestContext^ get();
             }
         };
     }

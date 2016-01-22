@@ -1,10 +1,11 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
-#include "MCefRefPtr.h"
+#include "Stdafx.h"
+
 #include "include/cef_cookie.h"
 
 using namespace System::Threading::Tasks;
@@ -42,7 +43,7 @@ namespace CefSharp
             virtual void SetSupportedSchemes(... cli::array<String^>^ schemes);
             virtual bool VisitAllCookies(ICookieVisitor^ visitor);
             virtual bool VisitUrlCookies(String^ url, bool includeHttpOnly, ICookieVisitor^ visitor);
-            virtual bool FlushStore(ICompletionHandler^ handler);
+            virtual Task<bool>^ FlushStoreAsync();
         };
     }
 }

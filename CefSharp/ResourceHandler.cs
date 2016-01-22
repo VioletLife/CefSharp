@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -124,7 +124,7 @@ namespace CefSharp
         /// </summary>
         /// <param name="stream">A stream of the resource.</param>
         /// <param name="mimeType">Type of MIME.</param>
-        /// <returns></returns>
+        /// <returns>ResourceHandler.</returns>
         public static ResourceHandler FromStream(Stream stream, string mimeType = DefaultMimeType)
         {
             return new ResourceHandler(mimeType, ResourceHandlerType.Stream) { Stream = stream };

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -21,7 +21,7 @@ namespace CefSharp
         /// <param name="windowInfo">window information</param>
         /// <param name="noJavascriptAccess">value indicates whether the new browser window should be scriptable
         /// and in the same process as the source browser.</param>
-        /// <param name="newBrowser">A newly created browser that will host the popup</param>
+        /// <param name="newBrowser">EXPERIMENTAL - A newly created browser that will host the popup</param>
         /// <returns>To cancel creation of the popup window return true otherwise return false.</returns>
         /// <remarks>
         /// CEF documentation:

@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,19 +6,14 @@
 
 #include "Stdafx.h"
 
-#include <include/cef_runnable.h>
+#include "include\cef_client.h"
 
 #include "BrowserSettings.h"
 #include "Internals/ClientAdapter.h"
 #include "Internals/CefDragDataWrapper.h"
 #include "Internals/RenderClientAdapter.h"
-#include "Internals/MCefRefPtr.h"
-#include "Internals/StringVisitor.h"
-#include "Internals/CefFrameWrapper.h"
-#include "Internals/CefSharpBrowserWrapper.h"
 #include "Internals/JavascriptCallbackFactory.h"
 
-using namespace CefSharp::Internals;
 using namespace System::Diagnostics;
 using namespace System::ServiceModel;
 using namespace System::Threading;
@@ -81,9 +76,11 @@ namespace CefSharp
 
         ~ManagedCefBrowserAdapter()
         {
+            _isDisposed = true;
             // Release the MCefRefPtr<ClientAdapter> reference
             // before calling _browserWrapper->CloseBrowser(true)
             this->!ManagedCefBrowserAdapter();
+
             if (_browserWrapper != nullptr)
             {
                 _browserWrapper->CloseBrowser(true);
@@ -101,13 +98,19 @@ namespace CefSharp
 
             if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
             {
-                _browserProcessServiceHost->Close();
+                if (CefSharpSettings::WcfTimeout > TimeSpan::Zero)
+                {
+                    _browserProcessServiceHost->Close(CefSharpSettings::WcfTimeout);
+                }
+                else
+                {
+                    _browserProcessServiceHost->Abort();
+                }
                 _browserProcessServiceHost = nullptr;
             }
 
             _webBrowserInternal = nullptr;
             _javaScriptObjectRepository = nullptr;
-            _isDisposed = true;
         }
 
         virtual property bool IsDisposed
@@ -118,14 +121,8 @@ namespace CefSharp
         virtual void OnAfterBrowserCreated(int browserId);
         void CreateOffscreenBrowser(IntPtr windowHandle, BrowserSettings^ browserSettings, RequestContext^ requestContext, String^ address);
         void CreateBrowser(BrowserSettings^ browserSettings, RequestContext^ requestContext, IntPtr sourceHandle, String^ address);
-        void WasResized();
-        void WasHidden(bool hidden);
-        void SendFocusEvent(bool isFocused);
-        void SetFocus(bool isFocused);
         bool SendKeyEvent(int message, int wParam, int lParam);
         void Resize(int width, int height);
-        void NotifyMoveOrResizeStarted();
-        void NotifyScreenInfoChanged();
         void RegisterJsObject(String^ name, Object^ object, bool lowerCaseJavascriptNames);
         void RegisterAsyncJsObject(String^ name, Object^ object, bool lowerCaseJavascriptNames);
         void OnDragTargetDragEnter(CefDragDataWrapper^ dragData, MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
@@ -141,6 +138,8 @@ namespace CefSharp
         /// </summary>
         /// <returns>Gets the current instance or null</returns>
         virtual IBrowser^ GetBrowser();
+
+        virtual IBrowser^ GetBrowser(int browserId);
 
         virtual property IJavascriptCallbackFactory^ JavascriptCallbackFactory
         {
